@@ -4,7 +4,7 @@ Companion repository for the paper **_"Big Data Architecture for Large Organizat
 
 It hosts the full-resolution **functional architecture diagrams**: a cloud-agnostic reference design and its realisation on the three major cloud platforms — Google Cloud, Amazon Web Services (AWS), and Microsoft Azure. The paper embeds the cloud-agnostic diagram and refers readers here for the per-cloud implementations.
 
-All four diagrams are maintained as pages of a single [draw.io](https://www.drawio.com/) source file and exported to vector PDF. They use an IEEE print-friendly style (black text for grayscale legibility, colour-coded layer families).
+All four diagrams are published as vector PDFs. They use an IEEE print-friendly style (black text for grayscale legibility, colour-coded layer families).
 
 ---
 
@@ -42,10 +42,7 @@ The layered reference architecture, independent of any cloud provider.
 | [`functional_diagram-GCP.pdf`](functional_diagram-GCP.pdf) | Google Cloud realisation |
 | [`functional_diagram-AWS.pdf`](functional_diagram-AWS.pdf) | AWS realisation |
 | [`functional_diagram-azure.pdf`](functional_diagram-azure.pdf) | Microsoft Azure realisation |
-| [`functional_diagram_revised.drawio`](functional_diagram_revised.drawio) | Editable draw.io source (all four diagrams as pages) |
 | [`previews/`](previews) | PNG previews used in this README |
-
-To edit the diagrams, open `functional_diagram_revised.drawio` in [draw.io desktop](https://github.com/jgraph/drawio-desktop/releases) or [app.diagrams.net](https://app.diagrams.net/). Each cloud lives on its own page.
 
 ---
 
