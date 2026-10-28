@@ -1,8 +1,10 @@
 # Big Data Architecture for Large Organizations — Companion Repository
 
-Companion repository for the paper **_"Big Data Architecture for Large Organizations: Incorporating Generative AI and Agentic AI"_** by Fathima Nuzla Ismail, Shanika Amarasoma, and Abira Sengupta.
+Companion repository for the paper **_"Big Data Architecture for Large Organizations: Incorporating Generative AI and Agentic AI"_** by Fathima Nuzla Ismail, Abira Sengupta, and Shanika Amarasoma.
 
 It hosts the full-resolution **functional architecture diagrams**: a cloud-agnostic reference design and its realisation on the three major cloud platforms — Google Cloud, Amazon Web Services (AWS), and Microsoft Azure. The paper embeds the cloud-agnostic diagram and refers readers here for the per-cloud implementations.
+
+Since release **v1.1** it also hosts the **evaluation model** ([`evaluation/`](evaluation)), which regenerates every number in the paper's evaluation section.
 
 All four diagrams are published as vector PDFs. They use an IEEE print-friendly style (black text for grayscale legibility, colour-coded layer families).
 
@@ -34,6 +36,25 @@ The layered reference architecture, independent of any cloud provider.
 
 ---
 
+## Evaluation model (v1.1)
+
+[`evaluation/evaluation_model.py`](evaluation/evaluation_model.py) is a dependency-free Python script. It regenerates the paper's:
+- Modelled monthly cost table, including the caching, routing and storage-tiering ablation.
+- Illustrative latency budget and agentic step breakdown.
+- Throughput arithmetic.
+- Weighted provider scores, with weight sensitivity.
+- Every sensitivity figure quoted in the text.
+
+```bash
+python3 evaluation/evaluation_model.py
+```
+
+It needs only the Python 3 standard library and is deterministic (seed 2026). Every assumption is set at the top of the script: workload, models, list prices, regions, storage classes, routing shares and latency budgets. Edit them to model your own organisation. [`evaluation/README.md`](evaluation/README.md) lists the assumptions and simplifications.
+
+> The outputs are **model-based estimates** built from published list prices and assumed component latencies. They are not measured bills or benchmarks. The routing savings hold only if the routed models meet your task-quality floor; the script doesn't measure quality.
+
+---
+
 ## Repository contents
 
 | File | Description |
@@ -43,6 +64,8 @@ The layered reference architecture, independent of any cloud provider.
 | [`functional_diagram-AWS.pdf`](functional_diagram-AWS.pdf) | AWS realisation |
 | [`functional_diagram-azure.pdf`](functional_diagram-azure.pdf) | Microsoft Azure realisation |
 | [`previews/`](previews) | PNG previews used in this README |
+| [`evaluation/evaluation_model.py`](evaluation/evaluation_model.py) | Analytical cost, latency and provider-scoring model (v1.1) |
+| [`evaluation/README.md`](evaluation/README.md) | Model assumptions, prices, sources and simplifications |
 
 ---
 
