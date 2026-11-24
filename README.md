@@ -6,6 +6,8 @@ It hosts the full-resolution **functional architecture diagrams**: a cloud-agnos
 
 It also hosts the **evaluation model** ([`evaluation/`](evaluation)), which regenerates every number in the paper's evaluation section. Release **v1.2** matches the camera-ready paper.
 
+Service names follow each vendor's documentation as of November 2026: renamed products use their new names, and services that are retired or closed to new customers are replaced by the successors the vendors recommend.
+
 All four diagrams are published as vector PDFs. They use an IEEE print-friendly style (black text for grayscale legibility, colour-coded layer families).
 
 ---
