@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Analytical evaluation model for "Big Data Architecture for Large
-Organizations: Incorporating Generative AI and Agentic AI" (release v1.2).
+Organizations: Incorporating Generative AI and Agentic AI" (release v1.3).
 
 Reproduces Tables II, III and V of the paper, the cost ablation, every
 sensitivity figure quoted in Section IV, and (since v1.2) the allowance and
@@ -81,11 +81,14 @@ LATENCY = {
     "replicas": (10, 50, 200),
 }
 
-# Provider capability scores (Table V).
+# Provider capability scores (Table V). Rated June 2026; in November 2026 the
+# transformation scores dropped by one on every cloud because data labeling now
+# relies on partner tools (SageMaker Ground Truth closed to new customers,
+# Vertex AI Data Labeling shut down, Azure ML data labeling retired).
 DIMENSIONS = [  # (dimension, weight, AWS, GCP, Azure)
     ("Data ingestion", 0.08, 5, 4, 4),
     ("Data Ocean, Mesh & Contracts", 0.12, 4, 5, 4),
-    ("Transformation & analytics", 0.10, 4, 5, 4),
+    ("Transformation & analytics", 0.10, 3, 4, 3),
     ("AI Infrastructure", 0.15, 5, 5, 4),
     ("GenAI platform", 0.13, 5, 4, 4),
     ("Agentic AI", 0.12, 5, 4, 4),

@@ -1,4 +1,4 @@
-# Evaluation model (release v1.2)
+# Evaluation model (release v1.3)
 
 `evaluation_model.py` reproduces every number in Section IV of
 *Big Data Architecture for Large Organizations: Incorporating Generative AI and Agentic AI*:
@@ -22,6 +22,7 @@ All assumptions live at the top of the script, so you can re-parameterise the mo
 - `PROVIDERS`: model, region and storage class, with USD list prices.
 - `ROUTING`: 80 % of RAG and 50 % of agent calls go to the small model.
 - `CACHED_INPUT_FRACTION`: 0.5.
+- `DIMENSIONS`: provider capability scores, rated June 2026. In v1.3 the transformation scores are 3 / 4 / 3 (AWS / GCP / Azure, previously 4 / 5 / 4), because each cloud's data-labeling service has been retired or closed to new customers and labeling now relies on partner tools. Every provider drops by the same amount, so the ranking and all weight-sensitivity results are unchanged.
 - `LATENCY`: stage budgets, decode speeds, tool-call budget, and the replica operating point.
 - `ESCALATION`, `OTHER_SCALE` (v1.2): the share of routed calls re-run on the flagship (10 %, 20 %), and the multipliers on the three allowance lines (×0.5, ×2).
 - `GOVERNANCE` (v1.2): 10^6 harmful attempts split equally between unregistered tools, out-of-scope writes, in-scope consequential writes and sensitive data in answers; approver error 1 / 5 / 20 %; DLP recall 0.98 and injection-screening recall 0.95 (the paper's Table IV targets); 600 k tool calls/day with a 1 % chance of losing an audit or gateway record, and a 0.5 chance that a shared pipeline loses both; 10 % of tasks proposing a consequential write, at 30 s per review.
