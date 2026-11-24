@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
 """Analytical evaluation model for "Big Data Architecture for Large
-Organizations: Incorporating Generative AI and Agentic AI" (release v1.1).
+Organizations: Incorporating Generative AI and Agentic AI" (release v1.2).
 
-Reproduces Tables II, III and V of the paper, the cost ablation, and every
-sensitivity figure quoted in Section IV. Standard library only; deterministic.
+Reproduces Tables II, III and V of the paper, the cost ablation, every
+sensitivity figure quoted in Section IV, and (since v1.2) the allowance and
+escalation sensitivity, the score tie margins and the governance control
+simulation. Standard library only; deterministic.
 
     python3 evaluation_model.py
 
@@ -277,6 +279,126 @@ def scores_report():
           {k: f"{100*v/DRAWS:.1f}%" for k, v in wins.items()})
 
 
+# ---------------------------------------------------------------------------
+# v1.2 additions: cost-line and escalation sensitivity, score flip margins,
+# and a trace-level simulation of the agent governance controls.
+# ---------------------------------------------------------------------------
+ESCALATION = (0.10, 0.20)   # share of routed small-model calls re-run on the flagship
+OTHER_SCALE = (0.5, 2.0)    # multiplier on the three top-down allowance lines
+
+GOVERNANCE = {
+    "attempts": 1_000_000,  # simulated harmful tool/output actions an agent attempts
+    # Attempt mix: call an unregistered tool; registered write tool outside the
+    # delegated scope; in-scope consequential write (only HITL can stop it);
+    # sensitive data placed in an answer (only DLP can stop it).
+    "mix": {"unregistered tool": 0.25, "out-of-scope write": 0.25,
+            "in-scope consequential write": 0.25, "sensitive data in output": 0.25},
+    "approver_error": (0.01, 0.05, 0.20),  # P(approver approves a harmful action)
+    "dlp_recall": 0.98,                    # Table IV acceptance target
+    "injection_recall": 0.95,              # Table IV acceptance target
+    "tool_calls_per_day": 600_000,         # 100 k tasks x 6 steps
+    "log_drop": 0.01,                      # P(audit or gateway record lost)
+    "shared_pipeline_corr": 0.5,           # P(gateway record also lost | audit lost), shared pipeline
+    "consequential_task_share": 0.10,      # tasks that propose a consequential write
+    "review_seconds": 30,
+}
+
+
+def cost_extra_report():
+    print("\n" + "=" * 78 + "\nv1.2 -- allowance-line and escalation sensitivity\n" + "=" * 78)
+    rs, ag = ROUTING["rag_small"], ROUTING["agent_small"]
+    _, _, ratio = monthly_mtok()
+    for k, p in PROVIDERS.items():
+        other = sum(p["other"].values())
+        base, opt = total(p), total(p, rs, ag, True)
+        scaled = ", ".join(f"x{s:g}: {100*(1-(opt+(s-1)*other)/(base+(s-1)*other)):.1f}%" for s in OTHER_SCALE)
+        # Escalation: a share e of routed calls fails the quality floor and is
+        # re-run on the cached flagship, so both calls are paid for.
+        flag = model_cost(p["flagship"], p["cache_read"], True)
+        per_e = rs * flag + ratio * ag * flag
+        cache_only = total(p, cached=True)
+        esc = ", ".join(f"e={int(100*e)}%: {100*(1-(opt+e*per_e)/base):.1f}%" for e in ESCALATION)
+        print(f"  {k:6} allowances {other:,.0f} -> reduction {scaled} | escalation {esc}, "
+              f"e=100%: {100*(1-(opt+per_e)/base):.1f}% | routing breaks even with the cached "
+              f"flagship at e={100*(cache_only-opt)/per_e:.0f}%")
+
+
+def flip_report():
+    names = list(PROVIDERS)
+    w0 = [d[1] for d in DIMENSIONS]
+    S = {k: [d[2 + i] for d in DIMENSIONS] for i, k in enumerate(names)}
+    tot = {k: sum(a * b for a, b in zip(w0, v)) for k, v in S.items()}
+    lead = max(tot, key=tot.get)
+    print("\nSmallest weight transfer (between two dimensions) that ties the leader:")
+    for k in names:
+        if k == lead:
+            continue
+        gap = tot[lead] - tot[k]
+        d = [a - b for a, b in zip(S[lead], S[k])]
+        best = min((gap / (d[i] - d[j]), DIMENSIONS[i][0], DIMENSIONS[j][0])
+                   for i in range(len(d)) for j in range(len(d))
+                   if d[i] - d[j] > 0 and w0[i] >= gap / (d[i] - d[j]))
+        print(f"  {k} ties {lead} if {best[0]:.3f} of weight moves from '{best[1]}' to '{best[2]}'")
+
+
+def governance_sim():
+    G = GOVERNANCE
+    rng = random.Random(SEED)
+    kinds = list(G["mix"])
+    cum, acc = [], 0.0
+    for kind in kinds:
+        acc += G["mix"][kind]
+        cum.append(acc)
+    draws = [kinds[next(i for i, c in enumerate(cum) if u < c)]
+             for u in (rng.random() for _ in range(G["attempts"]))]
+    u_hitl = [rng.random() for _ in draws]
+    u_dlp = [rng.random() for _ in draws]
+    u_inj = [rng.random() for _ in draws]
+
+    def executed(stack, err):
+        n = 0
+        for kind, h, d, s in zip(draws, u_hitl, u_dlp, u_inj):
+            if "screen" in stack and s < G["injection_recall"]:
+                continue
+            if "registry" in stack and kind in ("unregistered tool", "out-of-scope write"):
+                continue
+            if "hitl" in stack and kind == "in-scope consequential write" and h >= err:
+                continue
+            if "dlp" in stack and kind == "sensitive data in output" and d < G["dlp_recall"]:
+                continue
+            n += 1
+        return 1e4 * n / G["attempts"]
+
+    print("\n" + "=" * 78 + "\nv1.2 -- governance control simulation (control logic under assumed rates;\n"
+          "not a measurement of deployed effectiveness)\n" + "=" * 78)
+    print("  Harmful actions executed per 10,000 attempted, by control stack:")
+    stacks = [("no controls", ()), ("+ registry allow-list & scoped identity", ("registry",)),
+              ("+ HITL on consequential writes", ("registry", "hitl")),
+              ("+ DLP on outputs", ("registry", "hitl", "dlp")),
+              ("+ injection screening at the gateway", ("registry", "hitl", "dlp", "screen"))]
+    for name, st in stacks:
+        vals = [executed(st, e) for e in G["approver_error"]]
+        print(f"  {name:42}" + "".join(f"  err {int(100*e):2d}%: {v:7.1f}" for e, v in zip(G["approver_error"], vals)))
+
+    # Audit completeness: reconcile the audit trail against the gateway log.
+    n, q, c = G["tool_calls_per_day"], G["log_drop"], G["shared_pipeline_corr"]
+    rng = random.Random(SEED + 1)
+    for label, corr in (("independent pipelines", None), ("shared pipeline", c)):
+        gaps = found = 0
+        for _ in range(n):
+            audit_lost = rng.random() < q
+            gw_draw = rng.random()
+            gw_lost = (gw_draw < corr) if (audit_lost and corr is not None) else (gw_draw < q)
+            if audit_lost:
+                gaps += 1
+                found += not gw_lost
+        print(f"  Audit gaps found by reconciliation ({label}): {found:,}/{gaps:,} = {100*found/gaps:.1f}% per day")
+
+    k = 1e5 * G["consequential_task_share"]
+    print(f"  HITL load: {k:,.0f} approvals/day x {G['review_seconds']} s = "
+          f"{k*G['review_seconds']/3600:.0f} reviewer-hours/day")
+
+
 if __name__ == "__main__":
     print("Models and rates:")
     for k, p in PROVIDERS.items():
@@ -286,3 +408,6 @@ if __name__ == "__main__":
     cost_report()
     latency_report()
     scores_report()
+    cost_extra_report()
+    flip_report()
+    governance_sim()

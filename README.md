@@ -1,10 +1,10 @@
 # Big Data Architecture for Large Organizations — Companion Repository
 
-Companion repository for the paper **_"Big Data Architecture for Large Organizations: Incorporating Generative AI and Agentic AI"_** by Fathima Nuzla Ismail, Abira Sengupta, and Shanika Amarasoma.
+Companion repository for the paper **_"Big Data Architecture for Large Organizations: Incorporating Generative AI and Agentic AI"_** by Fathima Nuzla Ismail, Shanika Amarasoma, and Abira Sengupta.
 
 It hosts the full-resolution **functional architecture diagrams**: a cloud-agnostic reference design and its realisation on the three major cloud platforms — Google Cloud, Amazon Web Services (AWS), and Microsoft Azure. The paper embeds the cloud-agnostic diagram and refers readers here for the per-cloud implementations.
 
-Since release **v1.1** it also hosts the **evaluation model** ([`evaluation/`](evaluation)), which regenerates every number in the paper's evaluation section.
+It also hosts the **evaluation model** ([`evaluation/`](evaluation)), which regenerates every number in the paper's evaluation section. Release **v1.2** matches the camera-ready paper.
 
 All four diagrams are published as vector PDFs. They use an IEEE print-friendly style (black text for grayscale legibility, colour-coded layer families).
 
@@ -13,7 +13,7 @@ All four diagrams are published as vector PDFs. They use an IEEE print-friendly 
 ## Diagrams
 
 ### 1. Functional Architecture (cloud-agnostic)
-The layered reference architecture, independent of any cloud provider.
+The layered reference architecture, independent of any cloud provider. Heavy borders mark components that are new in this version and dashed borders mark components updated from the 2025 design; the rest are retained.
 
 ![Functional Architecture](previews/functional_architecture.png)
 
@@ -36,14 +36,16 @@ The layered reference architecture, independent of any cloud provider.
 
 ---
 
-## Evaluation model (v1.1)
+## Evaluation model (v1.2)
 
 [`evaluation/evaluation_model.py`](evaluation/evaluation_model.py) is a dependency-free Python script. It regenerates the paper's:
 - Modelled monthly cost table, including the caching, routing and storage-tiering ablation.
 - Illustrative latency budget and agentic step breakdown.
 - Throughput arithmetic.
 - Weighted provider scores, with weight sensitivity.
-- Every sensitivity figure quoted in the text.
+- Every sensitivity figure quoted in the text, including the allowance-line and quality-escalation sensitivity (v1.2).
+- The weight shift that ties two providers (v1.2).
+- A simulation of the agent governance controls: registry allow-list, scoped identity, HITL approval, DLP, injection screening and audit reconciliation (v1.2).
 
 ```bash
 python3 evaluation/evaluation_model.py
@@ -51,7 +53,7 @@ python3 evaluation/evaluation_model.py
 
 It needs only the Python 3 standard library and is deterministic (seed 2026). Every assumption is set at the top of the script: workload, models, list prices, regions, storage classes, routing shares and latency budgets. Edit them to model your own organisation. [`evaluation/README.md`](evaluation/README.md) lists the assumptions and simplifications.
 
-> The outputs are **model-based estimates** built from published list prices and assumed component latencies. They are not measured bills or benchmarks. The routing savings hold only if the routed models meet your task-quality floor; the script doesn't measure quality.
+> The outputs are **model-based estimates** built from published list prices and assumed component latencies. They are not measured bills or benchmarks. The routing savings hold only if the routed models meet your task-quality floor; the script doesn't measure quality. The governance simulation checks control logic under assumed detector recall and approver error; it does not measure how well deployed services stop real attacks.
 
 ---
 
@@ -64,7 +66,7 @@ It needs only the Python 3 standard library and is deterministic (seed 2026). Ev
 | [`functional_diagram-AWS.pdf`](functional_diagram-AWS.pdf) | AWS realisation |
 | [`functional_diagram-azure.pdf`](functional_diagram-azure.pdf) | Microsoft Azure realisation |
 | [`previews/`](previews) | PNG previews used in this README |
-| [`evaluation/evaluation_model.py`](evaluation/evaluation_model.py) | Analytical cost, latency and provider-scoring model (v1.1) |
+| [`evaluation/evaluation_model.py`](evaluation/evaluation_model.py) | Analytical cost, latency, provider-scoring and governance-control model (v1.2) |
 | [`evaluation/README.md`](evaluation/README.md) | Model assumptions, prices, sources and simplifications |
 
 ---

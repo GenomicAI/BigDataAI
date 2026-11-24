@@ -1,4 +1,4 @@
-# Evaluation model (release v1.1)
+# Evaluation model (release v1.2)
 
 `evaluation_model.py` reproduces every number in Section IV of
 *Big Data Architecture for Large Organizations: Incorporating Generative AI and Agentic AI*:
@@ -7,6 +7,7 @@
 - The throughput arithmetic.
 - Table V (weighted provider scores), with weight sensitivity.
 - Every sensitivity figure quoted in the text.
+- Since v1.2: the allowance-line and quality-escalation sensitivity, the smallest weight shift that ties two providers, and the governance control simulation. These are printed after the v1.1 output, which is unchanged.
 
 ```bash
 python3 evaluation_model.py
@@ -22,6 +23,8 @@ All assumptions live at the top of the script, so you can re-parameterise the mo
 - `ROUTING`: 80 % of RAG and 50 % of agent calls go to the small model.
 - `CACHED_INPUT_FRACTION`: 0.5.
 - `LATENCY`: stage budgets, decode speeds, tool-call budget, and the replica operating point.
+- `ESCALATION`, `OTHER_SCALE` (v1.2): the share of routed calls re-run on the flagship (10 %, 20 %), and the multipliers on the three allowance lines (×0.5, ×2).
+- `GOVERNANCE` (v1.2): 10^6 harmful attempts split equally between unregistered tools, out-of-scope writes, in-scope consequential writes and sensitive data in answers; approver error 1 / 5 / 20 %; DLP recall 0.98 and injection-screening recall 0.95 (the paper's Table IV targets); 600 k tool calls/day with a 1 % chance of losing an audit or gateway record, and a 0.5 chance that a shared pipeline loses both; 10 % of tasks proposing a consequential write, at 30 s per review.
 
 | Provider | Flagship ($/M in/out) | Small ($/M in/out) | Cached input | Storage hot / warm / archive ($/GB-month) |
 |---|---|---|---|---|
@@ -34,10 +37,12 @@ These are the mid-2026 list prices the paper cites (pricing pages accessed June 
 ### Simplifications
 - First-tier storage rates are applied to all volume. S3 Standard and Azure Hot get cheaper above 50 TB, so this overstates the hot class by about 4 % in the tiered layout and by about 9 % in the all-hot ablation. With volume tiers, tiering cuts the storage line by 68–71 % instead of 70–71 %; the headline reductions are unchanged.
 - Cache-write premiums, cache storage fees, archive retrieval and early-deletion fees, batch tiers and negotiated discounts are all ignored.
-- Ingestion/transformation, retrieval infrastructure and governance are top-down sizing estimates. They are identical in both configurations.
+- Ingestion/transformation, retrieval infrastructure and governance are top-down allowances, not built from unit prices. They are identical in both configurations because routing and caching change only inference tokens. v1.2 reports the reductions with these lines halved and doubled.
+- An escalated call is re-run on the cached flagship and both calls are paid for; the cost of detecting quality failures is not modelled.
 
 ### What the outputs are, and are not
 - **Cost:** a modelled bill, not a measured one.
 - **Routing:** the routing shares are admissible only if the routed configuration meets your task-quality floor. The model does not measure quality.
 - **Latency:** the totals are illustrative budgets. Adding stage P95s gives the end-to-end P95 only if the stages are comonotonic; otherwise the sum is usually conservative.
 - **Throughput:** 8 requests/s per replica is an assumed operating point, not a benchmark.
+- **Governance:** the simulation shows how the controls combine under the assumed rates. It does not measure detector recall, approver behaviour or attack success on any real service.
